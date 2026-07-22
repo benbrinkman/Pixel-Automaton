@@ -10,8 +10,9 @@ var cv;
 var ctx;
 var w;
 var h;
-const scale = 35;
+const scale = 15;
 var counter = 0;
+var idcounter = 0;
 const numColors = 2;
 var colors;
 var numRules = 5;
@@ -196,6 +197,11 @@ function drawpixels(event) {
 function newid() {//use to create a unique id for any elements
     counter++;
     return counter;
+}
+
+function newrid(){
+    idcounter++;
+    return idcounter;
 }
 
 function randcolor() { //returns random color from colors
@@ -588,7 +594,7 @@ var ruleObj = {
     init: function (cbefore, cafter, condition) {
         //CONDITION OBJECT: {type, colors, x, targets, active}
 
-        this.id = "rule_" + newid();
+        this.id = "rule_" + newrid();
         this.processed = [];
 
         this.cbefore = [];
@@ -664,8 +670,17 @@ var ruleObj = {
         document.getElementById(this.id + "_condition_" + id).remove();
         // console.log(this.conditions);
     },
-    deleteself: function(){
-console.log('delete');
+    deleteself: function () {
+        // console.log('delete');
+        // console.log(rulesbycolor);
+        var numcolors = this.cbefore.length;
+        for (var i = 0; i < this.cbefore.length; i++) {
+            removerulecolor(this, this.cbefore[i]);
+        }
+        rules.splice(rules.findIndex((r) => r.id == this.id), 1);
+        // console.log(rules);
+        document.getElementById("rulewrapper_" + this.id).remove();
+
     },
     conidtoindex: function (id) {
         return this.conditions.findIndex((c) => c.id == id);
@@ -733,7 +748,7 @@ console.log('delete');
             }
         } else {
             if (append) {
-                console.log(this);
+                // console.log(this);
                 var addcols = this.checkcolor(col);
                 for (var i = 0; i < addcols.length; i++) {
                     if (!this.conditions[conditionindex].colors.some((c) => c.id == addcols[i].id)) { this.conditions[conditionindex].colors.push(addcols[i]); }
@@ -847,16 +862,16 @@ console.log('delete');
     },
 
     removex: function (x, conditionindex) {
-        console.log('removing ' + x);
-        console.log(typeof (x));
+        // console.log('removing ' + x);
+        // console.log(typeof (x));
         if (typeof (x) == "number") {
             for (var i = 0; i < this.conditions[conditionindex].x.length; i++) {
-                console.log("checking match for: " + this.conditions[conditionindex].x[i]);
+                // console.log("checking match for: " + this.conditions[conditionindex].x[i]);
                 if (this.conditions[conditionindex].x[i] == x) {
-                    console.log(this.conditions[conditionindex].x);
-                    console.log('removing: ' + this.conditions[conditionindex].x[i]);
+                    // console.log(this.conditions[conditionindex].x);
+                    // console.log('removing: ' + this.conditions[conditionindex].x[i]);
                     this.conditions[conditionindex].x.splice(i, 1);
-                    console.log(this.conditions[conditionindex].x);
+                    // console.log(this.conditions[conditionindex].x);
                     break;
                 }
             }
@@ -904,14 +919,13 @@ console.log('delete');
 
     processAllRules: function (pixel) {
         const ncolors = pixel.ncolors();
-
-        //SOMETHING WEIRD GOING ON WITH RULES, NEW CONDITIONS ARE NOT PROCESSING
-
+var hasrun = false;
         // console.log(this.conditions.length);
         for (var k = 0; k < this.conditions.length; k++) {
             // console.log("BEFORE "+this.conditions[k].type);
             if (this.conditions[k].active !== false) {
-                console.log(this.conditions[k].type + " PIXEL " + pixel.i);
+                hasrun = true;
+                // console.log(this.conditions[k].type + " PIXEL " + pixel.i);
 
                 switch (this.conditions[k].type) {
                     case ruletypes[0]: //xcolors
@@ -919,12 +933,10 @@ console.log('delete');
                         for (var j = 0; j < this.conditions[k].x.length; j++) {
                             if (this.countnearbycolors(pixel, this.conditions[k].colors, pixel.i == 0) == this.conditions[k].x[j]) {
                                 foundmatch = true;
-                                console.log('CONFIRMED MATCH FOR XCOLORS: ' + this.countnearbycolors(pixel, this.conditions[k].colors, pixel.i == 0) + " EQUALS " + this.conditions[k].x[j]);
-
                                 break;
                             }
                         }
-                        if (!foundmatch) { console.log("returning after xcolors"); return false }
+                        if (!foundmatch) { return false }
                         break;
                     case ruletypes[1]: //groupcountis
                         var foundmatch = false;
@@ -939,14 +951,13 @@ console.log('delete');
                             }
                             if (foundmatch) { break; }
                         }
-                        if (!foundmatch) { console.log("returning after groupcount"); return false }
+                        if (!foundmatch) { return false }
                         break;
                     case ruletypes[2]: //groupcountgreater
                         var foundmatch = false;
                         for (var j = 0; j < this.conditions[k].colors.length; j++) {
                             var numneighbors = countpixelgroup(pixel, this.conditions[k].colors[j], false);
                             if (typeof (numneighbors) == "number") { numneighbors = [numneighbors] };
-                            console.log(numneighbors);
                             for (var i = 0; i < numneighbors.length; i++) {
                                 if (numneighbors[i] > this.conditions[k].x) {
                                     foundmatch = true;
@@ -954,7 +965,7 @@ console.log('delete');
                             }
                             if (foundmatch) { break; }
                         }
-                        if (!foundmatch) { console.log("returning after greater"); return false }
+                        if (!foundmatch) { return false }
                         break;
                     case ruletypes[3]: //groupcountless
                         var foundmatch = false;
@@ -962,18 +973,15 @@ console.log('delete');
                             var numneighbors = countpixelgroup(pixel, this.conditions[k].colors[j], false);
                             if (typeof (numneighbors) == "number") { numneighbors = [numneighbors] };
                             for (var i = 0; i < numneighbors.length; i++) {
-                                console.log('checking less than color ' + this.conditions[k].colors[j].name + " with group size " + numneighbors[i] + " against X " + this.conditions[k].x);
                                 if (numneighbors[i] < this.conditions[k].x) {
                                     foundmatch = true;
-                                    console.log('CONFIRMED MATCH FOR LESS THAN: ' + numneighbors[i] + " IS LESS THAN " + this.conditions[k].x);
                                     // break;
                                 }
                             }
                         }
-                        if (!foundmatch) { console.log("returning after less"); return false }
+                        if (!foundmatch) { return false }
                         break;
                     case ruletypes[4]: //groupcountbetween
-                        console.log('what am I doing here');
                         var foundmatch = false;
                         for (var j = 0; j < this.conditions[k].colors.length; j++) {
                             var numneighbors = countpixelgroup(pixel, this.conditions[k].colors[j], false);
@@ -986,7 +994,7 @@ console.log('delete');
                             }
                             if (foundmatch) { break; }
                         }
-                        if (!foundmatch) { console.log("returning after countbetween"); return false }
+                        if (!foundmatch) { return false }
                         break;
                     default:
                         break;
@@ -994,7 +1002,7 @@ console.log('delete');
 
             }
         }
-        if (this.conditions.length == 0) {
+        if (!hasrun) {
             return false;
         }
 
@@ -1041,7 +1049,6 @@ console.log('delete');
         //     return false;
         //     break;
 
-        console.log('MATCH MISSION SUCCESS: ' + pixel.i);
         return this.cafter;
 
 
@@ -1201,7 +1208,7 @@ console.log('delete');
                     this.value = 0;
                     if (this.rule.conditions[this.rule.conidtoindex(this.id)].x == 0) { return }
                 }
-                this.rule.setx(this.value, this.rule.conidtoindex(this.id));
+                this.rule.setx(parseInt(this.value), this.rule.conidtoindex(this.id));
             });
         } else if (this.conditions[index].type == ruletypes[4]) {
             // console.log('adding type 4');
@@ -1307,7 +1314,7 @@ console.log('delete');
 
         const deleterule = document.getElementById("delete_" + this.id);
         deleterule.rule = this;
-        deleterule.addEventListener("click", function(){
+        deleterule.addEventListener("click", function () {
             this.rule.deleteself();
         });
 
@@ -1381,11 +1388,11 @@ console.log('delete');
 };
 
 function countpixelgroup(pixel, color, orthagonal) {
-
+orthagonal = true;
 
     if (pixel.pc.id == color.id) {
         if (pixel.groupsize !== null) {
-            console.log(pixel.i + ' Group already counted: ' + pixel.groupsize);
+            // console.log(pixel.i + ' Group already counted: ' + pixel.groupsize);
             return pixel.groupsize;
         }
         var validneighbors = new Set();
@@ -1658,7 +1665,9 @@ function initelements() {
         })
     }
 
-
+    document.getElementById("newrule").addEventListener("click", function () {
+        rules.push(newRule(white, black));
+    });
 
 
 
@@ -1770,7 +1779,7 @@ function init() {
 
     cv = document.getElementById("cv");
     ctx = cv.getContext('2d');
-    console.log(cv.offsetWidth);
+    // console.log(cv.offsetWidth);
     canvassize();
     pixelwidth = cv.offsetWidth / w;
     updatesize();
@@ -1817,8 +1826,8 @@ window.addEventListener('load', function () {
 
 
 function initbg() {
-    console.log(w);
-    console.log(h);
+    // console.log(w);
+    // console.log(h);
 
     pixels = Array(w * h);
     for (i = 0; i < (w * h); i++) {
@@ -1903,6 +1912,27 @@ function setswirls(col1, col2, col3) {
 }
 
 function ruletests(col1, col2, col3) {
+
+
+
+
+    //NEW ONE:
+    //black 1-8 white, turn white
+    //white 8white and white group >50, turn cyan
+    //white 2-5 cyan, turn cyan
+    //cyan, 8 cyan and cyan group greater than 75, turn red
+    //red group red greater than 25 and 7 or 8 red nearby, turn black
+    //cyan, 1-8 red, turn red
+    //red, 1-8 black, turn black
+
+
+
+
+
+
+
+
+
 
 
 
