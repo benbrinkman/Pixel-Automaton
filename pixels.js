@@ -68,7 +68,7 @@ const gray = { type: "color", id: 11, name: "gray", hex: "#808080", rgb: "rgb(12
 var colors = [red, orange, yellow, green, blue, magenta, indigo, black, white, violet, cyan, gray];
 var rulesbycolor = Array(colors.length);
 var menucolors = [white];
-
+var ruleorder = [];
 
 
 // const red = "rgb(255,0,0)";
@@ -199,7 +199,7 @@ function newid() {//use to create a unique id for any elements
     return counter;
 }
 
-function newrid(){
+function newrid() {
     idcounter++;
     return idcounter;
 }
@@ -327,64 +327,6 @@ function addelem(type, classes, id, parent, name, value, text, innerhtml) {
     return elem;
 }
 
-
-//depricated
-function ChangeColor(input, parentid, col, colortype) {
-    console.log(input.checked);
-    // console.log('input: ' + input + " parentid: " + parentid + " color:" + col.name + " colortype:" + colortype);
-    // var parentrule = parentid.substring(parentid.indexOf('_') + 1);
-
-    console.log(colortype);
-    if (!rules.find((r) => r.id == parentid).setcolor(colortype, col, !input.checked, true)) {
-        input.checked = true;
-    }
-    console.log(rules.find((r) => r.id == parentid).cbefore);
-
-    // rules.find((r) => r.id == parentrule).setRuleType("xcolors");
-
-}
-
-//depricated
-function ChangeRule(type, parent) {
-    for (var i = 0; i < rules.length; i++) {
-        if (rules[i].id == parent) {
-            rules[i].setRuleType(type, true);
-        }
-    }
-}
-
-//depricated
-function initColorOptions(parent, type, colortype, ruleid, colorschosen) {
-    // var cont = parent;
-    // console.log(cont);
-    colors.forEach((col, index) => {
-        var label = document.createElement("label");
-        var input = document.createElement("input");
-        input.type = type;
-        input.name = "colorOptions_" + parent.id;
-        input.id = parent.id + "_" + col.id;
-        // console.log(parent.id);
-        // console.log(col.id);
-        input.value = colortype
-        input.addEventListener("click", () => { ChangeColor(input, ruleid, col, input.value, type) });
-
-        if (colortype !== "after") {
-            if (colorschosen.some((c) => c.id == col.id)) {
-                input.checked = "checked";
-            }
-        } else {
-            if (colorschosen.id == col.id) {
-                input.checked = "checked";
-
-            }
-        }
-        input.style.backgroundColor = col.rgb;
-        input.classList.add("pointer");
-        label.appendChild(input);
-
-        parent.appendChild(label);
-    });
-}
 
 ///////////////////////////////////////////////////////////////////////////////////
 //OBJECTS//
@@ -560,6 +502,8 @@ function removerulecolor(rule, color) {
     // console.log(rulesbycolor);
     var rls = rulesbycolor.find((rc) => rc.id == color.id).c;
     rls.splice(rls.findIndex((co) => co.id == rule.id), 1);
+    console.log(rls);
+
 }
 
 function addrulecolor(rule, color, reset) {
@@ -568,20 +512,30 @@ function addrulecolor(rule, color, reset) {
             removerulecolor(rule, rule.cbefore[i]);
         }
     }
-    if (color.type == "color") {
-        var rls = rulesbycolor.find((rc) => rc.id == color.id).c;
-        if (!rls.some((r) => r.id == rule.id)) {
+    var rls = rulesbycolor.find((rc) => rc.id == color.id).c;
+    console.log(rls);
+    if (!rls.some((r) => r.id == rule.id)) {
+        if (rls.length == 0) {
             rls.push(rule);
-        }
-    } else {
-        for (var i = 0; i < color.length; i++) {
-            var rls = rulesbycolor.find((rc) => rc.id == color[i].id).c;
-            if (!rls.some((r) => r.id == rule.id)) {
-                rls.push(rule);
+        } else {
+            for (var i = 0; i < rls.length; i++) {
+                console.log('checking rule: ' + rls[i].id + " oi: " + rls[i].orderindex);
+                if (rls[i].orderindex > rule.orderindex) {
+                    rls.splice(i, 0, rule);
+                    console.log(rls);
+
+                    return;
+                }
             }
+            rls.push(rule);
+
         }
     }
+    console.log(rls);
+
+
 }
+
 
 
 var ruleObj = {
@@ -591,9 +545,10 @@ var ruleObj = {
     //morethancolors - has >= X colors in neighbors (x[0-7])
     //specificcolors- has color at neighbors(x[1-7], target[unique neighbors 0-8])
     // init: function (type, cbefore, cafter, ccheck, x, all, targets) {
-    init: function (cbefore, cafter, condition) {
+    init: function (orderindex, cbefore, cafter, condition) {
         //CONDITION OBJECT: {type, colors, x, targets, active}
 
+        this.orderindex = orderindex;
         this.id = "rule_" + newrid();
         this.processed = [];
 
@@ -704,13 +659,15 @@ var ruleObj = {
         if (remove) {
             if (this.cbefore.length == 1) { return false; }
             var cols = this.checkcolor(col);
-            for (var i = 0; i < cols.length; i++) {
-                // console.log(cols[i]);
+
+            for (var i = 0; i < cols.length; i++) { //for every color being removed
+                //find its index in the input colors
                 var index = this.cbefore.findIndex((c) => c.id === cols[i].id);
-                if (index !== -1) {
+                if (index !== -1) { //if found in input colors, remove it:
                     this.cbefore.splice(index, 1);
                     this.processed.splice(index, 1);
                     removerulecolor(this, cols[i]);
+                    document.getElementById("inputcolor_" + this.id + "_" + cols[i].name).remove();
                 }
             }
         } else {
@@ -722,6 +679,7 @@ var ruleObj = {
                         this.processed.push(false);
 
                         addrulecolor(this, addcols[i]);
+                        this.createruletitlecolorelem(addcols[i]);
                     }
                 }
             } else {
@@ -729,6 +687,7 @@ var ruleObj = {
                 this.processed = [];
                 for (var i = 0; i < this.cbefore.length; i++) {
                     this.processed[i] = false;
+                    this.createruletitlecolorelem(this.cbefore[i]);
                 }
                 addrulecolor(this, this.cbefore, true);
             }
@@ -765,7 +724,12 @@ var ruleObj = {
         return true;
     },
     setcolorafter: function (col) {
+        if (this.initiated) {
+            document.getElementById("titleoutputcolor_" + this.id).classList.remove(this.cafter.name);
+            document.getElementById("titleoutputcolor_" + this.id).classList.add(col.name);
+        }
         this.cafter = this.checkcolor(col)[0];
+
         this.updateelement();
     },
     toggleColor: function (col, type, state) { //depricated
@@ -919,7 +883,7 @@ var ruleObj = {
 
     processAllRules: function (pixel) {
         const ncolors = pixel.ncolors();
-var hasrun = false;
+        var hasrun = false;
         // console.log(this.conditions.length);
         for (var k = 0; k < this.conditions.length; k++) {
             // console.log("BEFORE "+this.conditions[k].type);
@@ -1051,6 +1015,15 @@ var hasrun = false;
 
         return this.cafter;
 
+
+    },
+    createruletitlecolorelem: function (col) {
+        if (this.initiated) {
+
+            var inelem = `<div id="inputcolor_${this.id}_${col.name}" class = "titlecolor titlecolorinput ${col.name}"></div>`;
+
+            document.getElementById("titleinputcolorholder_" + this.id).insertAdjacentHTML("beforeend", inelem);
+        }
 
     },
     addcolorboxeventlistener: function (colorbox, type, selectedcolors, id) {
@@ -1256,17 +1229,34 @@ var hasrun = false;
             newconelems += `<div id="newcon_${this.id}_${i}" class="newconoption transition flat">${ruletypes[i]}</div>`
         }
 
+        var titleinputcolors = "";
+        for (var i = 0; i < this.cbefore.length; i++) {
+            var inelem = `<div id="inputcolor_${this.id}_${this.cbefore[i].name}" class = "titlecolor titlecolorinput ${this.cbefore[i].name}"></div>`;
+            titleinputcolors += inelem;
+        }
+
         var mainelem = `
             <div id="rulewrapper_${this.id}" class="ruleholder">
                 <div class="ruledisplayholder ruleinputholder">
-                    <div class="titlespan pointer">
-                        <div id="dd_${this.id}" class="row grow" data-value="${[this.id]}">
-                            <div id="dd_arrow_${this.id}" class="ddarrow">&lt;</div>
-                            <div class="title">${title}</div>
+                    <div class="ruletitlebar">
+                        <div class="titlespan pointer">
+                            <div id="dd_${this.id}" class="row grow" data-value="${[this.id]}">
+                                <div id="dd_arrow_${this.id}" class="ddarrow">&lt;</div>
+                                <div class="title">${title}</div>
+                            </div>
+                            <div class="row">
+                                <div id="reorder_${this.id}" class="endcap column reorderwrapper">
+                                    <div id="reorderup_${this.id}" class="reorderarrow"><div><</div></div>
+                                    <div id="reorderdown_${this.id}" class="reorderarrow"><div>></div></div>
+                                </div>
+                                <input type="checkbox" class="endcapruleheader" id="activate_${this.id}">
+                                <div id="delete_${this.id}" class="endcapruleheader">X</div>
+                            </div>
                         </div>
-                        <div class="row">
-                            <input type="checkbox" class="endcapruleheader" id="activate_${this.id}">
-                            <div id="delete_${this.id}" class="endcapruleheader">X</div>
+                        <div id="titlecolors_${this.id}" class="titlecolorbar">
+                            <div id ="titleinputcolorholder_${this.id}" class="titlecolorinputholder"> ${titleinputcolors}</div>
+                            <div class="titlecolorspacer">></div>
+                            <div id="titleoutputcolor_${this.id}" class = "titlecolor titlecoloroutput ${this.cafter.name}"></div>
                         </div>
                     </div>
                     <div id="dd_content_${this.id}" class="fullwidth ${starthidden}">
@@ -1297,6 +1287,51 @@ var hasrun = false;
 
 
 
+        const arrowup = document.getElementById("reorderup_" + this.id);
+        const arrowdown = document.getElementById("reorderdown_" + this.id);
+
+        arrowup.rule = this;
+        arrowdown.rule = this;
+
+        arrowup.addEventListener("click", function () {
+            if (this.rule.orderindex == 0) { console.log("returning from arrowup"); return; }
+            var targetrule = ruleorder.find((ro) => ro.orderindex == this.rule.orderindex - 1);
+            targetrule.orderindex++;
+            this.rule.orderindex--;
+
+            const ruleblock = document.getElementById("rulewrapper_" + this.rule.id);
+            if (ruleblock.previousElementSibling) {
+                ruleblock.parentNode.insertBefore(ruleblock, ruleblock.previousElementSibling);
+            }
+            for (var i = 0; i < this.rule.cbefore.length; i++) {
+                removerulecolor(this.rule, this.rule.cbefore[i]);
+            }
+            for (var i = 0; i < this.rule.cbefore.length; i++) {
+                addrulecolor(this.rule, this.rule.cbefore[i]);
+            }
+
+
+        });
+        arrowdown.addEventListener("click", function () {
+            if (this.rule.orderindex == ruleorder.length - 1) { console.log("returning from arrowdown"); return; }
+            var targetrule = ruleorder.find((ro) => ro.orderindex == this.rule.orderindex + 1);
+            targetrule.orderindex--;
+            this.rule.orderindex++;
+
+            const ruleblock = document.getElementById("rulewrapper_" + this.rule.id);
+            if (ruleblock.nextElementSibling) {
+                ruleblock.parentNode.insertBefore(ruleblock.nextElementSibling, ruleblock);
+            }
+            for (var i = 0; i < this.rule.cbefore.length; i++) {
+                removerulecolor(this.rule, this.rule.cbefore[i]);
+            }
+            for (var i = 0; i < this.rule.cbefore.length; i++) {
+                addrulecolor(this.rule, this.rule.cbefore[i]);
+            }
+        });
+
+
+        //new condition buttons
         for (var i = 0; i < ruletypes.length; i++) {
             const elem = document.getElementById("newcon_" + this.id + "_" + i);
             elem.rule = this;
@@ -1311,11 +1346,12 @@ var hasrun = false;
             });
         }
 
-
+        //delete button
         const deleterule = document.getElementById("delete_" + this.id);
         deleterule.rule = this;
         deleterule.addEventListener("click", function () {
-            this.rule.deleteself();
+            deleteRule(this.rule);
+            // this.rule.deleteself();
         });
 
         //disable rule
@@ -1388,7 +1424,7 @@ var hasrun = false;
 };
 
 function countpixelgroup(pixel, color, orthagonal) {
-orthagonal = true;
+    orthagonal = true;
 
     if (pixel.pc.id == color.id) {
         if (pixel.groupsize !== null) {
@@ -1507,9 +1543,12 @@ orthagonal = true;
 }
 
 
-function newRule(type, cbefore, ccheck, cafter, x, all) {
+function newRule(cbefore, cafter, conditions) {
     var object = Object.create(ruleObj);
-    object.init(type, cbefore, ccheck, cafter, x, all);
+    object.init(ruleorder.length, cbefore, cafter, conditions);
+    ruleorder.push(object);
+
+
     return object;
 }
 
@@ -1671,6 +1710,20 @@ function initelements() {
 
 
 
+}
+
+
+
+function deleteRule(rule) {
+
+    var i = ruleorder.findIndex((ro) => ro.id == rule.id);
+    ruleorder.splice(i, 1);
+    var io = rule.orderindex;
+    for (var i = 0; i < ruleorder.length; i++) {
+        if (ruleorder[i].orderindex > io) { ruleorder[i].orderindex-- }
+    }
+    rule.deleteself();
+    console.log(ruleorder);
 }
 
 
@@ -2191,7 +2244,7 @@ function setflow2(col1, col2, col3) {
     // var orangesurvive = {type:"xcolors", colors: [c2,c1], x:[2,3], active:true};
     // var s2 = { type: "xcolors", colors: white, x: [2, 3], active: true };
     var w1 = { type: "xcolors", colors: c2, x: [3, 4, 5], active: true };
-    var b1 = { type: "xcolors", colors: c3, x: [3, 4, 5], active: true };
+    var b1 = { type: "xcolors", colors: c1, x: [1], active: true };
     var wg50 = { type: "groupcountgreater", colors: c2, x: [50], active: true };
     var b3m = { type: "xcolors", colors: c3, x: [3, 4, 5, 6, 7, 8], active: true };
     var w0 = { type: "xcolors", colors: c2, x: [0], active: true };
@@ -2203,7 +2256,7 @@ function setflow2(col1, col2, col3) {
 
 
     // rules.push(newRule(c2, c1, b1));
-    rules.push(newRule(c1, c2, [b1, wg50]));
+    newRule(c2, c1, [b1]);
     // rules.push(newRule(c2, c3, [wg50, noorange]));
 
     // rules.push(newRule(c3, c1, b1));
