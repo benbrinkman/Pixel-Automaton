@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="Vector.js"></script>
+    <script src="pixels.js"></script>
+    <link rel="stylesheet" type="text/css" href="pixels.css">
+    <title>Pixels</title>
+    <link rel="icon" href="data:,">
+</head>
+
+<body>
+    <div id="brush" class="hidden">
+        <div class="outliner"></div>
+    </div>
+    <div id="header">
+        <div id="addpixelsbutton" class="headeritem button">
+            <span>Add random pixels</span>
+        </div>
+        <div class="headeritem">
+            <label>Brush Size</label>
+            <input type="range" id="sizeslider">
+        </div>
+        <div class="headeritem">
+            <label>Pixel Density</label>
+            <input type="range" id="densityslider">
+        </div>
+        <div class="colorholder-header">
+            <!-- <div class="colorholder-selections">
+                <div class = "colorbox-header cb-header colorboxselected">v</div>
+            </div> -->
+            <div class="colorholder-colors">
+                <div class="colorboxwrapper">
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                    <div class="button colorbox-header cb-header red" data-value="red"></div>
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                </div>
+                <div class="colorboxwrapper">
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                    <div class="button colorbox-header cb-header orange" data-value="orange"></div>
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                </div>
+                <div class="colorboxwrapper">
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                    <div class="button colorbox-header cb-header yellow" data-value="yellow"></div>
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                </div>
+                <div class="colorboxwrapper">
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                    <div class="button colorbox-header cb-header green" data-value="green"></div>
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                </div>
+                <div class="colorboxwrapper">
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                    <div class="button colorbox-header cb-header blue" data-value="blue"></div>
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                </div>
+                <div class="colorboxwrapper">
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                    <div class="button colorbox-header cb-header magenta" data-value="magenta"></div>
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                </div>
+                <div class="colorboxwrapper">
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                    <div class="button colorbox-header cb-header indigo" data-value="indigo"></div>
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                </div>
+                <div class="colorboxwrapper">
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                    <div class="button colorbox-header cb-header black" data-value="black"></div>
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                </div>
+                <div class="colorboxwrapper">
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                    <div class="button colorbox-header cb-header white" data-value="white"></div>
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                </div>
+                <div class="colorboxwrapper">
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                    <div class="button colorbox-header cb-header violet" data-value="violet"></div>
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                </div>
+                <div class="colorboxwrapper">
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                    <div class="button colorbox-header cb-header cyan" data-value="cyan"></div>
+                    <div class="colorselector">
+                        <p class="hidden">&lt;</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="headeritem">
+            <label>Speed</label>
+            <input type="range" id="speedslider">
+        </div>
+        <div class="mediacontrols button headeritem" id="playbutton">| |</div>
+        <div class="mediacontrols button headeritem fade" id="nextbutton">>></div>
+    </div>
+    <div class="rulewrapper">
+        <div id="rules">
+        </div>
+        <div id="newrule" class="newelembutton pointer">
+        
+            <div class="buttontitle">New Rule</div>
+        </div>
+
+    </div>
+    <div id="main">
+        <div id="mainwrapper">
+            <div class="canvaswrapper">
+                <canvas id="cv"></canvas>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
