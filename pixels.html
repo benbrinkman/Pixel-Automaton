@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="Vector.js"></script>
+    <script src="presets.js"></script>
     <script src="pixels.js"></script>
     <link rel="stylesheet" type="text/css" href="pixels.css">
     <title>Pixels</title>
@@ -15,34 +16,27 @@
     <div id="brush" class="hidden">
         <div class="outliner"></div>
     </div>
-    <div id="header">
+    <div id="header" class="header expandheader">
 
         <div id="presets" class="headeritem presetddcontainer transition">
 
 
             <div class="presetwrapper">
                 <div class="ddtitle">
-                    <div>Presets:</div>
+                    <div id="presettitle">Presets:</div>
                     <div class="ddarrowpreset">&lt;</div>
                 </div>
-                <div class="presetoptions">
-                    <div class="presetoption  transition">preset 1</div>
-                    <div class="presetoption  transition">preset 2</div>
-                    <div class="presetoption  transition">preset 3</div>
-                    <div class="presetoption  transition">preset 4</div>
-                    <div class="presetoption  transition">preset 5</div>
+                <div id="presetoptions" class="presetoptions">
+                    <div class="presetoption  transition">No presets found<div>X</div></div>
                 </div>
             </div>
 
 
         </div>
-        <div id="storepreset" class="headeritem button">
-            <span>Import preset</span>
+        <div id="storepreset" class="storepreset button transition">
+            <input type="text" tabindex = "-1" id="presetname" class="textinput transition">
+            <div id="savepresettitle" class="savepresettitle transition">Save preset</div>
         </div>
-        <div id="storepreset" class="headeritem button">
-            <span>Store preset</span>
-        </div>
-
         <div id="addpixelsbutton" class="headeritem button">
             <span>Add random pixels</span>
         </div>
@@ -184,6 +178,7 @@
             </div>
         </div>
     </div>
+    <div id="stylecontainer"></div>
 </body>
 
 </html>

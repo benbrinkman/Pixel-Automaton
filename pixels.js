@@ -10,7 +10,7 @@ var cv;
 var ctx;
 var w;
 var h;
-const scale = 15;
+const scale = 5;
 var counter = 0;
 var idcounter = 0;
 const numColors = 2;
@@ -69,6 +69,8 @@ var colors = [red, orange, yellow, green, blue, magenta, indigo, black, white, v
 var rulesbycolor = Array(colors.length);
 var menucolors = [white];
 var ruleorder = [];
+
+
 
 
 // const red = "rgb(255,0,0)";
@@ -297,6 +299,7 @@ function processrules(i) { //apply all the rules to all the pixels
 }
 
 
+
 //for every color, create an array of rules
 //find the rule set that matches the pixel color, then iterate through that
 
@@ -502,7 +505,7 @@ function removerulecolor(rule, color) {
     // console.log(rulesbycolor);
     var rls = rulesbycolor.find((rc) => rc.id == color.id).c;
     rls.splice(rls.findIndex((co) => co.id == rule.id), 1);
-    console.log(rls);
+    // console.log(rls);
 
 }
 
@@ -513,16 +516,16 @@ function addrulecolor(rule, color, reset) {
         }
     }
     var rls = rulesbycolor.find((rc) => rc.id == color.id).c;
-    console.log(rls);
+    // console.log(rls);
     if (!rls.some((r) => r.id == rule.id)) {
         if (rls.length == 0) {
             rls.push(rule);
         } else {
             for (var i = 0; i < rls.length; i++) {
-                console.log('checking rule: ' + rls[i].id + " oi: " + rls[i].orderindex);
+                // console.log('checking rule: ' + rls[i].id + " oi: " + rls[i].orderindex);
                 if (rls[i].orderindex > rule.orderindex) {
                     rls.splice(i, 0, rule);
-                    console.log(rls);
+                    // console.log(rls);
 
                     return;
                 }
@@ -531,42 +534,117 @@ function addrulecolor(rule, color, reset) {
 
         }
     }
-    console.log(rls);
+    // console.log(rls);
 
 
 }
 
-function storepreset(presetid){
+////////////////////////////////////////////////////////////////////////
+//PRESETS
+////////////////////////////////////////////////////////////////////////
+
+function storepreset(presetid, usermade, initcolors) {
 
     var storage = localStorage.getItem("presets");
-    storage = storage?JSON.parse(storage):[];
+    storage = storage ? JSON.parse(storage) : [];
 
     //all rules, sort by their orderindex
     var preset = [];
-    for (var i = 0; i < ruleorder.length; i++){
-        var r = ruleorder.find((ro)=>ro.orderindex == i);
+    for (var i = 0; i < ruleorder.length; i++) {
+        var r = ruleorder.find((ro) => ro.orderindex == i);
         preset.push(storerule(r));
     }
     // console.log(preset);
-    if(storage.some((p)=>p.id == presetid) || !presetid){
+    if (storage.some((p) => p.id == presetid) || !presetid) {
         console.warn("preset already exists!");
         return;
-    }else{
-        storage.push({id:presetid, pre:preset});
+    } else {
+        storage.push({ id: presetid, pre: preset, usermade: usermade, initcolors: initcolors });
     }
     localStorage.setItem("presets", JSON.stringify(storage));
+    refreshpresets();
 }
 
-function storerule(rule){
+function restorepreset(presetid) {
+    // console.log(presetid);
+    var storage = localStorage.getItem("presets");
+    storage = JSON.parse(storage);
+    var preset = storage.find((p) => p.id == presetid);
+    if(preset){
+
+        deleteallrules();
+        console.log(preset);
+        for (var i = 0; i < preset.pre.length; i++) {
+            var r = preset.pre[i];
+            var newrule = newRule(r.inputcolor, r.outputcolor, r.conditions);
+        }
+        if(preset.initcolors){
+            addrandompixels(preset.initcolors, 1);
+        }
+    }else{
+        console.log('preset not found: '+presetid);
+    }
+
+}
+
+function refreshpresets() {
+    var storage = localStorage.getItem("presets");
+    if (storage) {
+        var elemstring = "";
+        var styleelem = "";
+        storage = JSON.parse(storage);
+        for (var i = 0; i < storage.length; i++) {
+            // var deletebutton="";
+            // if(storage[i].usermade == true){
+
+            // }
+            var elemid = storage[i].id.split("_").join("").split(" ").join("").toLowerCase();
+            elemstring += `<div id="preset_${elemid}" class="presetoption  transition" data-value="${storage[i].id}">${storage[i].id}</div>`;
+            var labelcolor = (findlabelcolor(storage[i]));
+            styleelem += `<style>#preset_${elemid}:before{background-color:${labelcolor};}</style>`
+        }
+        document.getElementById("presetoptions").innerHTML = elemstring;
+        document.getElementById("stylecontainer").innerHTML = styleelem;
+        var presetelems = Array.from(document.getElementById("presetoptions").children);
+        for (var i = 0; i < presetelems.length; i++){
+
+            presetelems[i].addEventListener("click", function(){
+                console.log(this.dataset.value);
+                restorepreset(this.dataset.value);
+            });
+        }
+        // presettitle
+    } else {
+        console.log("No presets found");
+    }
+}
+
+function findlabelcolor(rule) {
+    var col = rule.pre.find((p) => p.inputcolor.find((ic) => ic.name !== "white"));
+    if (col) { return col.inputcolor.find((ic) => ic.name !== "white").hex; }
+
+    col = rule.pre.find((p) => p.outputcolor.name !== "white");
+    if (col) { return col.outputcolor.hex; }
+
+    for (var i = 0; i < rule.pre.length; i++) {
+        for (var j = 0; j < rule.pre[i].conditions.length; j++) {
+            for (var k = 0; k < rule.pre[i].conditions[j].colors.length; k++) {
+                if (rule.pre[i].conditions[j].colors[k].name !== "white") { return rule.pre[i].conditions[j].colors[k].hex };
+            }
+        }
+    }
+}
+
+function storerule(rule) {
     var cons = [];
-    for (var i = 0; i < rule.conditions.length; i++){
+    for (var i = 0; i < rule.conditions.length; i++) {
         cons.push(storecondition(rule.conditions[i]));
     }
-    return storeobj = {orderindex:rule.orderindex, inputcolor:rule.cbefore, outputcolor: rule.cafter, active:rule.active, conditions:cons};
+    return storeobj = { orderindex: rule.orderindex, inputcolor: rule.cbefore, outputcolor: rule.cafter, active: rule.active, conditions: cons };
     //conditions, orderindex, inputcolors, outputcolor, active
 }
-function storecondition(con){
-    return {type:con.type, colors: con.colors, x:con.x, active:con.active, targets:con.targets};
+function storecondition(con) {
+    return { type: con.type, colors: con.colors, x: con.x, active: con.active, targets: con.targets };
     //{type, colors, x, active, targets}
 }
 
@@ -1178,14 +1256,16 @@ var ruleObj = {
         });
 
 
-        //Checkbox
+        //active checkbox
         const mycheckbox = document.getElementById("activate_" + this.id + "_" + id);
         mycheckbox.checked = this.conditions[index].active;
         mycheckbox.rule = this;
         mycheckbox.id = id;
         mycheckbox.addEventListener("change", function () {
-            document.getElementById(this.rule.id + "_condition_" + this.id).classList.toggle("overlay");
-            this.rule.conditions[this.rule.conidtoindex(this.id)].active = !this.rule.conditions[this.rule.conidtoindex(this.id)].active;
+            this.rule.togglecondition(this.id);
+            
+            // document.getElementById(this.rule.id + "_condition_" + this.id).classList.toggle("overlay");
+            // this.rule.conditions[this.rule.conidtoindex(this.id)].active = !this.rule.conditions[this.rule.conidtoindex(this.id)].active;
         });
 
 
@@ -1318,6 +1398,8 @@ var ruleObj = {
 
 
 
+
+        //move rules up/down in the order
         const arrowup = document.getElementById("reorderup_" + this.id);
         const arrowdown = document.getElementById("reorderdown_" + this.id);
 
@@ -1388,8 +1470,9 @@ var ruleObj = {
         disablerule.rule = this;
         disablerule.checked = true;
         disablerule.addEventListener("click", function () {
-            this.rule.active = !this.rule.active;
-            document.getElementById("rulewrapper_" + this.rule.id).classList.toggle("overlay");
+            this.rule.toggleactive();
+            // this.rule.active = !this.rule.active;
+            // document.getElementById("rulewrapper_" + this.rule.id).classList.toggle("overlay");
         });
 
 
@@ -1443,6 +1526,14 @@ var ruleObj = {
 
         //Add in a condition box
         // this.createconditionelement(0);
+    },
+    toggleactive: function () {
+        this.active = !this.active;
+        document.getElementById("rulewrapper_" + this.id).classList.toggle("overlay");
+    },
+    togglecondition: function(conid){
+        document.getElementById(this.id + "_condition_" + conid).classList.toggle("overlay");
+        this.conditions[this.conidtoindex(conid)].active = !this.conditions[this.conidtoindex(conid)].active;
     },
 
     updateelement: function () {
@@ -1658,13 +1749,18 @@ function draw() {
     // ctx.restore();
 }
 
+
+
+
 function initelements() {
+
+
+    //PLAY/PAUSE/NEXT
     document.getElementById("playbutton").addEventListener("click", function () { pause(); });
     document.getElementById("nextbutton").addEventListener("click", () => { if (paused) { update(); } });
 
-    document.getElementById("presets").addEventListener("click", function(){});
 
-
+    //BRUSH SIZE
     brushelem = document.getElementById("brush");
     brushsizeelem = document.getElementById("sizeslider");
     brushsizeelem.min = 1;
@@ -1674,7 +1770,7 @@ function initelements() {
     setbrushsize();
 
 
-
+    //SPEED SLIDER
     var slider = document.getElementById("speedslider");
     slider.addEventListener("change", () => { speed = minspeed - slider.value; });
     slider.max = minspeed;
@@ -1682,13 +1778,14 @@ function initelements() {
     slider.value = minspeed / 2;
     speed = minspeed / 2;
 
+    //DENSITY SLIDER
     var denelem = document.getElementById("densityslider");
     denelem.min = 1;
     denelem.max = 100;
     denelem.value = 50;
 
 
-
+    //DRAWING INPUT
     addEventListener("mousedown", (e) => {
         mousepos = Vector(event.clientX, event.clientY);
         mousedown = true
@@ -1696,7 +1793,7 @@ function initelements() {
     });
     addEventListener("mouseup", (e) => { mousedown = false });
 
-
+    //MOVING BRUSH ELEMENT
     window.addEventListener('mousemove', function (event) {
         mousepos = Vector(event.clientX, event.clientY);
         if (withinElem(mousepos, cv)) {
@@ -1711,10 +1808,10 @@ function initelements() {
         }
     });
 
-
+    //ADD PIXELS BUTTON
     document.getElementById("addpixelsbutton").addEventListener("click", function () { addrandompixels(menucolors, document.getElementById("densityslider").value / 100); });
 
-
+    //MENU COLOR BOXES
     const colorboxes = document.getElementsByClassName("cb-header");
     for (var i = 0; i < colorboxes.length; i++) {
         colorboxes[i].addEventListener("click", function (e) {
@@ -1733,15 +1830,49 @@ function initelements() {
         })
     }
 
+    //NEW RULE BUTTON
     document.getElementById("newrule").addEventListener("click", function () {
         rules.push(newRule(white, black));
     });
 
 
+    //SAVE PRESET BUTTON
+    var saveelementelem = document.getElementById("savepresettitle");
+    saveelementelem.addEventListener("click", function(){
+        var textinput = document.getElementById("presetname");
+        var savebutton = document.getElementById("savebutton");
+        // textinput.classList.add("textinputopen");
+        console.log('save');
+        if(textinput.value == ""){
+            console.warnlog('Need a name in order to save a preset');
+        }else{
+            if(ruleorder.length == 0){
+                console.warn("cannot save empty ruleset");
+            }else{
+                storepreset(textinput.value, true);
+                console.log('ruleset saved!');
+            }
+        }
+    });
+    
+    document.getElementById("storepreset").addEventListener("mouseleave", function(){
+        console.log('test');
+        document.activeElement.blur();
+        var textinput = document.getElementById("presetname");
+    });
+
+
+
+
+
 
 }
 
-
+function deleteallrules() {
+    for (var i = 0; i < colors.length; i++) { rulesbycolor[i] = { id: colors[i].id, c: [] }; }
+    ruleorder = [];
+    document.getElementById("rules").innerHTML = "";
+}
 
 function deleteRule(rule) {
 
@@ -1872,21 +2003,38 @@ function init() {
     imd = ctx.createImageData(w, h);
     initbg();
     pause();
-    // setGOL();
     // setB36S23();
-    setflow2();
+    // setflow2();
     // ruletests();
     // ruletests();
-    // setswirls();
     document.addEventListener("keydown", (event) => { shift = event.shiftKey; });
-    document.addEventListener("keyup", (event) => { shift = event.shiftKey; });
+    document.addEventListener("keyup", (event) => {
+        shift = event.shiftKey;
+        if (event.key == "c") {  }
+    });
 
     // pixelwidth = cv.getBoundingClientRect().width / w;
 
     // ruletests();
 
     draw();
-    // storepreset("test1");
+    // setGOL();
+    // storepreset("Game of Life", false, [black, white]);
+    // setflow();
+    // storepreset("Flow", false, [black, white]);
+
+    // setswirls(cyan, violet, white);
+    // storepreset("Swirls", false, [cyan, violet, white]);
+
+    if (!localStorage.getItem("presets")) {
+        localStorage.setItem("presets", JSON.stringify(builtinpresets));
+    }
+
+
+    // console.log(rulesbycolor);
+    refreshpresets();
+    // restorepreset("Swirls");
+
 }
 
 
@@ -1989,9 +2137,13 @@ function setswirls(col1, col2, col3) {
     }
     addrandompixels([c1, c3, c2], 0.99);
 
-    rules.push(newRule("xcolors", c2, c3, c3, [3, 4, 5, 6, 7, 8]));
-    rules.push(newRule("xcolors", c1, c2, c2, [3, 4, 5, 6, 7, 8]));
-    rules.push(newRule("xcolors", c3, c1, c1, [3, 4, 5, 6, 7, 8]));
+    // rules.push(newRule("xcolors", c2, c3, c3, [3, 4, 5, 6, 7, 8]));
+    // rules.push(newRule("xcolors", c1, c2, c2, [3, 4, 5, 6, 7, 8]));
+    // rules.push(newRule("xcolors", c3, c1, c1, [3, 4, 5, 6, 7, 8]));
+
+    newRule(c2, c3, { type: "xcolors", colors: c3, x: [3, 4, 5, 6, 7, 8] });
+    newRule(c1, c2, { type: "xcolors", colors: c2, x: [3, 4, 5, 6, 7, 8] });
+    newRule(c3, c1, { type: "xcolors", colors: c1, x: [3, 4, 5, 6, 7, 8] });
 }
 
 function ruletests(col1, col2, col3) {
@@ -2201,25 +2353,32 @@ function setflow(col1, col2, col3) {
     }
 
 
-    var ow678 = { type: "xcolors", colors: [c2, c1], x: [6, 7, 8], active: true };
-    var ow4t8 = { type: "xcolors", colors: [c2, c1], x: [4, 5, 6, 7, 8], active: true };
-    var o23 = { type: "xcolors", colors: c1, x: [2, 3], active: true };
 
-    var ow3 = { type: "xcolors", colors: [c2, c1], x: 3, active: true };
-    var w32 = { type: "xcolors", colors: c2, x: [2, 3], active: true };
-    var death = { type: "xcolors", colors: [c2, c2], x: [0, 1, 2, 3, 4, 5, 6, 7, 8], active: true };
 
     // var orangesurvive = {type:"xcolors", colors: [c2,c1], x:[2,3], active:true};
     // var s2 = { type: "xcolors", colors: white, x: [2, 3], active: true };
 
 
+    //c1 = orange
+    //c2 = white
+    //c3 = black
+
+    var ow678 = { type: "xcolors", colors: [c2, c1], x: [6, 7, 8], active: true };
     rules.push(newRule(c1, c1, ow678));
+
+    var ow4t8 = { type: "xcolors", colors: [c2, c1], x: [4, 5, 6, 7, 8], active: true };
     rules.push(newRule(c2, c1, ow4t8));
+
+    var o23 = { type: "xcolors", colors: c1, x: [2, 3], active: true };
     rules.push(newRule(c1, c1, o23));
 
+    var ow3 = { type: "xcolors", colors: [c2, c1], x: 3, active: true };
     rules.push(newRule(c2, c2, ow3));
+
+    var w32 = { type: "xcolors", colors: c2, x: [2, 3], active: true };
     rules.push(newRule(c3, c2, w32));
 
+    var death = { type: "xcolors", colors: [c2, c2], x: [0, 1, 2, 3, 4, 5, 6, 7, 8], active: true };
     rules.push(newRule([c1, c2], c3, death));
 
 
@@ -2324,12 +2483,17 @@ function setflow2(col1, col2, col3) {
 function setB36S23() {
 
     //B36S23
-    rules.push(newRule("xcolors", white, white, white, 2));
-    rules.push(newRule("xcolors", white, white, white, 3));
 
-    rules.push(newRule("xcolors", black, white, white, 3));
-    rules.push(newRule("xcolors", black, white, white, 6));
-    rules.push(newRule("xcolors", white, black, black, [1, 2, 3, 4, 5, 6, 7, 8]));
+    // var ow678 = { type: "xcolors", colors: [c2, c1], x: [6, 7, 8], active: true };
+    // var ow678 = { type: "xcolors", colors: white, x: 2};
+
+    //
+    newRule(white, white, { type: "xcolors", colors: white, x: [2, 3] });
+    // newRule("xcolors", white, white, white, 3);
+
+    newRule(black, white, { type: "xcolors", colors: white, x: [3, 6] });
+    // newRule("xcolors", black, white, white, 6);
+    newRule(white, black, { type: "xcolors", colors: black, x: [1, 2, 3, 4, 5, 6, 7, 8] });
     // rules.push(newRule("lessthancolors", white, white, black, 8));
 
 }
@@ -2343,9 +2507,9 @@ function setGOL(col1, col2) {
     var s2 = { type: "xcolors", colors: c1, x: [2, 3], active: true };
     var b3 = { type: "xcolors", colors: c1, x: [3], active: true };
     var death = { type: "xcolors", colors: [c1, c2], x: [1, 2, 3, 4, 5, 6, 7, 8], active: true };
-    rules.push(newRule(c1, c1, s2));
-    rules.push(newRule(c2, c1, b3));
-    rules.push(newRule(c1, c2, death));
+    newRule(c1, c1, s2);
+    newRule(c2, c1, b3);
+    newRule(c1, c2, death);
 
 
     // rules.push(newRule("xcolors", c1, c1, c1, [2, 3]));
