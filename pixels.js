@@ -536,7 +536,39 @@ function addrulecolor(rule, color, reset) {
 
 }
 
+function storepreset(presetid){
 
+    var storage = localStorage.getItem("presets");
+    storage = storage?JSON.parse(storage):[];
+
+    //all rules, sort by their orderindex
+    var preset = [];
+    for (var i = 0; i < ruleorder.length; i++){
+        var r = ruleorder.find((ro)=>ro.orderindex == i);
+        preset.push(storerule(r));
+    }
+    // console.log(preset);
+    if(storage.some((p)=>p.id == presetid) || !presetid){
+        console.warn("preset already exists!");
+        return;
+    }else{
+        storage.push({id:presetid, pre:preset});
+    }
+    localStorage.setItem("presets", JSON.stringify(storage));
+}
+
+function storerule(rule){
+    var cons = [];
+    for (var i = 0; i < rule.conditions.length; i++){
+        cons.push(storecondition(rule.conditions[i]));
+    }
+    return storeobj = {orderindex:rule.orderindex, inputcolor:rule.cbefore, outputcolor: rule.cafter, active:rule.active, conditions:cons};
+    //conditions, orderindex, inputcolors, outputcolor, active
+}
+function storecondition(con){
+    return {type:con.type, colors: con.colors, x:con.x, active:con.active, targets:con.targets};
+    //{type, colors, x, active, targets}
+}
 
 var ruleObj = {
     // ruletypes = ["xcolors", "lessthancolors", "morethancolors", "specificcolors"];
@@ -588,11 +620,10 @@ var ruleObj = {
     initcondition: function (condition) {
 
         if (condition.active == undefined) { condition.active = true };
-        var inputcolors = this.checkcolor;
+        // var inputcolors = this.checkcolor;
         var id = this.id + "_con_" + newid();
         var newcondition = {
             type: condition.type,
-            index: this.conditions.length,
             x: null,
             targets: [],
             active: condition.active,
@@ -1309,8 +1340,6 @@ var ruleObj = {
             for (var i = 0; i < this.rule.cbefore.length; i++) {
                 addrulecolor(this.rule, this.rule.cbefore[i]);
             }
-
-
         });
         arrowdown.addEventListener("click", function () {
             if (this.rule.orderindex == ruleorder.length - 1) { console.log("returning from arrowdown"); return; }
@@ -1633,7 +1662,7 @@ function initelements() {
     document.getElementById("playbutton").addEventListener("click", function () { pause(); });
     document.getElementById("nextbutton").addEventListener("click", () => { if (paused) { update(); } });
 
-
+    document.getElementById("presets").addEventListener("click", function(){});
 
 
     brushelem = document.getElementById("brush");
@@ -1857,6 +1886,7 @@ function init() {
     // ruletests();
 
     draw();
+    // storepreset("test1");
 }
 
 
